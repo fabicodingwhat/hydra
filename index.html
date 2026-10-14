@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hydra</title>
+<meta name="description" content="The persistence of evil and chaos. Cut one down, two take its place.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
+<style>
+@font-face {
+  font-family: "PP Fragment Glare";
+  src: url("assets/fonts/PPFragment-GlareRegular-subset.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+:root {
+  --bg: #1B1B1B;
+  --ink: #7A7A7A;
+  --ink-quiet: #535353;
+  --groove-dark: #0A0A0A;
+  --groove-light: #232323;
+  --u: calc(100vw / 1728);
+  --hydra-visible: min(calc(232.7 * var(--u)), 21vh);
+  --head-scale: 1;
+  color-scheme: dark;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: inherit; }
+html, body { height: 100%; margin: 0; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "PP Fragment Glare", "Cormorant Garamond", Georgia, serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+}
+
+/* ---------- hero ---------- */
+.stage {
+  position: absolute;
+  inset: 0 0 auto 0;
+  bottom: calc(var(--hydra-visible) + 56px); /* refined in JS to the footer's top edge */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.hero {
+  position: relative;
+  width: 415.51px;
+  height: 541.52px;
+  flex-shrink: 0;
+  transform-origin: center;
+}
+.hero .sigil {
+  position: absolute;
+  left: 100px; top: 0;
+  width: 232px; height: 266px;
+  perspective: 1100px;
+  user-select: none;
+}
+.sigil-3d {
+  position: absolute; inset: 0;
+  transform-style: preserve-3d;
+  --face: 1; --side: 0.3; --back: 1;
+}
+.sigil-layer {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  -webkit-user-drag: none;
+  backface-visibility: visible;
+}
+.sigil-layer.face { filter: brightness(var(--face)); backface-visibility: hidden; }
+.sigil-layer.side {
+  /* the slab's edge: a flat stone-coloured silhouette, so the carving isn't repeated in depth */
+  background-color: #8A8986;
+  background-size: 340% auto;          /* the sigil's own stone, zoomed so it reads as grain, not as a copy of the carving */
+  background-position: 38% 62%;
+  -webkit-mask: center / cover no-repeat;
+  mask: center / cover no-repeat;
+  filter: brightness(calc(var(--side) * var(--k, 1))) contrast(1.25);
+}
+.sigil-layer.back { filter: brightness(var(--back)); }
+.hero .arc {
+  position: absolute;
+  left: 0; top: 333px;
+  width: 415.51px; height: 208.52px;
+}
+.hero .head { position: absolute; left: 133.98px; top: 309px; pointer-events: auto; }
+
+/* ---------- the button ---------- */
+.head {
+  appearance: none;
+  border: 0;
+  padding: 0 0 4px;
+  margin: 0;
+  width: 148px;
+  height: 52px;
+  border-radius: 7px;
+  background: #FFFFFFB8;
+  overflow: clip;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.head .base, .head .face, .head .grain { position: absolute; pointer-events: none; }
+.head .base {
+  left: 0; top: 4px; width: 148px; height: 49px; border-radius: 8px;
+  background: linear-gradient(0deg, #050202 -5.07%, #707070 5.81%);
+  background: linear-gradient(in oklab 0deg, oklab(4.6% 0.015 0.008) -5.07%, oklab(54.3% 0 0) 5.81%);
+}
+.head .face {
+  left: 0; top: 0; width: 148px; height: 49px; border-radius: 8px;
+  background: linear-gradient(180deg, #DEDEDE 0%, #A5A5A5 97.97%);
+  background: linear-gradient(in oklab 180deg, oklab(89.8% 0 0) 0%, oklab(71.8% 0 0) 97.97%);
+}
+.head .label {
+  position: relative;
+  color: #464646;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding-top: 3px;
+  pointer-events: none;
+}
+.head .grain {
+  left: -7.99px; top: -28.38px; width: 206px; height: 112px;
+  background: url("assets/stone-texture.jpg") center / cover no-repeat;
+  mix-blend-mode: hard-light;
+}
+.head .face, .head .label, .head .grain { transition: transform 90ms ease-out; }
+.head:hover .face { filter: brightness(1.04); }
+.head:active .face, .head:active .label, .head:active .grain { transform: translateY(2px); }
+.head:focus-visible { outline: 1px solid #9A9A9A; outline-offset: 4px; }
+
+/* spawned heads */
+.swarm { position: absolute; inset: 0; pointer-events: none; }
+.swarm .head { position: absolute; pointer-events: auto; transform: scale(var(--head-scale)); transform-origin: 0 0; }
+
+/* crumbled head */
+.piece {
+  position: absolute;
+  pointer-events: none;
+  margin: 0;
+  z-index: 5;
+}
+.debris {
+  position: absolute;
+  width: 148px; height: 52px;
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.debris .piece { left: 0; top: 0; }
+.dust { position: absolute; border-radius: 50%; pointer-events: none; }
+
+/* ---------- footer ---------- */
+.footer {
+  position: absolute;
+  left: 34px; right: 34px;
+  bottom: calc(var(--hydra-visible) + 11px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  pointer-events: none;
+}
+.footer .row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  color: var(--ink-quiet);
+  font-size: 12px;
+  line-height: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.footer .row span:nth-child(2) { text-align: center; }
+.footer .mark { display: inline-block; width: 0.837em; height: 1em; vertical-align: -0.2em; }
+.footer .row span:nth-child(3) { text-align: right; }
+.footer .groove {
+  height: 1.5px;
+  border-top: 0.5px solid var(--groove-light);
+  border-bottom: 1px solid var(--groove-dark);
+}
+.hydra {
+  position: absolute;
+  left: calc(-0.2 * var(--u));
+  top: calc(100% - var(--hydra-visible));
+  width: calc(1802.7 * var(--u));
+  height: auto;
+  pointer-events: none;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .footer { left: 20px; right: 20px; }
+  .footer .row { grid-template-columns: 1fr; gap: 6px; text-align: center; }
+  .footer .row span:nth-child(n) { text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+}
+</style>
+</head>
+<body>
+  <main class="stage">
+    <div class="hero" id="hero">
+      <div class="sigil" role="img" aria-label="Carved stone hydra sigil"><div class="sigil-3d"><img class="sigil-layer face" alt="" src="assets/sigil.webp"></div></div>
+      <svg class="arc" role="img" aria-label="The persistence of evil and chaos. Cut one down, two take its place." xmlns="http://www.w3.org/2000/svg" width="415.51" height="208.52" viewBox="0 0 415.51 208.52" fill="none"><path d="M18.37 0.11C19.25 3.01 19.83 4.87 19.9 6.55L19.91 6.77L3.8 7.45C1.81 7.53 0.83 7.4 0.11 6.37L0 6.37L0.23 11.91L0.34 11.91C0.97 10.82 1.94 10.64 3.93 10.55L20.04 9.87L20.06 10.13C20.13 11.8 19.7 13.67 19.07 16.64L21.64 16.53L20.95 -0ZM0.87 22.29 1.71 27.83 1.82 27.81C2.32 26.63 3.27 26.35 5.24 26.05L11.72 25.06L13.25 35.14L6.77 36.13C4.8 36.42 3.82 36.43 2.99 35.45L2.88 35.47L3.72 41.01L3.83 40.99C4.33 39.81 5.28 39.52 7.24 39.23L20.78 37.17C22.85 36.85 23.73 36.86 24.59 37.83L24.67 37.82L23.83 32.28L23.75 32.3C23.22 33.48 22.38 33.75 20.31 34.07L14.66 34.93L13.13 24.85L18.77 23.99C20.85 23.67 21.73 23.68 22.59 24.66L22.67 24.64L21.83 19.11L21.74 19.12C21.22 20.31 20.38 20.57 18.3 20.89L4.77 22.95C2.8 23.25 1.81 23.26 0.98 22.28ZM5.09 46.91 8.72 60.67 11.32 59.98C9.9 57.69 8.87 55.76 8.38 53.89L7.56 50.78L16.28 48.48L16.71 50.11C17.11 51.65 17.65 53.91 17.99 56.2L19.92 55.69C19.17 53.51 18.44 51.3 18.03 49.76L17.61 48.13L25.38 46.08L26.07 48.71C26.5 50.34 26.6 52.28 26.64 55.39L29.08 54.75L25.59 41.51L25.51 41.53C25.11 42.77 24.31 43.12 22.28 43.66L9.04 47.15C7.11 47.65 6.13 47.77 5.2 46.88ZM13.76 75.29 15.97 80.47 16.07 80.42C16.25 79.13 17.1 78.62 18.92 77.84L24.62 75.41L25.53 77.54C27.6 82.41 30.61 85.12 34.35 83.52C37.98 81.97 38.13 78.41 36.11 73.67L33.25 66.97L33.18 67C32.96 68.28 32.22 68.75 30.29 69.58L17.69 74.95C15.86 75.73 14.91 75.99 13.86 75.25ZM25.88 74.87 33.71 71.53 34.76 74C36.06 77.04 35.86 79.44 33.11 80.61C30.22 81.84 28.13 80.15 26.72 76.85ZM22.12 94.07 28.93 106.56 31.29 105.27C29.37 103.38 27.91 101.76 26.98 100.06L25.44 97.23L33.35 92.91L34.16 94.39C34.92 95.79 35.99 97.86 36.86 99.99L38.61 99.04C37.36 97.11 36.13 95.13 35.36 93.73L34.56 92.26L41.61 88.41L42.91 90.79C43.72 92.27 44.29 94.13 45.07 97.14L47.28 95.94L40.73 83.92L40.65 83.96C40.56 85.25 39.87 85.79 38.02 86.8L26 93.35C24.26 94.31 23.33 94.65 22.22 94.01ZM31.62 110.96 34.78 115.62 34.87 115.55C34.8 114.25 35.53 113.58 37.18 112.46L42.57 108.79L43.83 110.64L39.21 122.12L41.26 125.13L41.42 125.02L45.68 112.91C48.01 115.59 50.86 116.7 53.59 114.84C56.67 112.74 56.1 109.27 53.41 105.31L49.14 99.04L49.07 99.09C49.11 100.38 48.47 100.99 46.73 102.17L35.41 109.87C33.77 110.99 32.88 111.43 31.71 110.9ZM43.7 108.02 50.46 103.42 51.97 105.64C53.82 108.35 54.16 110.69 51.8 112.3C49.25 114.03 46.95 112.79 44.98 109.9ZM48.38 134.48C51.1 137.72 54.65 138.65 57.53 136.24C60.28 133.94 59.55 130.98 58.31 126.57C57.29 123 56.76 120.93 58.48 119.49C60 118.22 61.79 118.47 63.48 120.49C65.33 122.7 65.04 125.32 63.12 127.4L65.05 129.69C67.66 126.63 67.29 122.78 64.65 119.62C62.13 116.61 58.76 115.6 56.1 117.83C53.61 119.92 54.12 122.7 55.27 126.74C56.52 131.03 56.97 133.09 55.15 134.62C53.31 136.13 51.24 135.67 49.52 133.61C47.34 130.97 47.76 128.06 50.26 125.64L48.32 123.32C45.12 126.66 45.38 130.89 48.38 134.48ZM57.06 143.53 60.97 147.54 61.05 147.46C60.77 146.21 61.37 145.43 62.79 144.04L72.59 134.48C74.1 133.01 74.81 132.5 76.08 132.8L76.14 132.74L72.23 128.73L72.17 128.79C72.43 130.06 71.91 130.77 70.4 132.23L60.6 141.79C59.18 143.18 58.38 143.77 57.14 143.46ZM70.52 157.06C73.69 159.86 77.34 160.25 79.83 157.43C82.2 154.75 81.03 151.92 79.15 147.76C77.61 144.38 76.77 142.41 78.25 140.73C79.57 139.24 81.37 139.23 83.35 140.97C85.51 142.88 85.61 145.51 84.03 147.85L86.28 149.83C88.41 146.41 87.46 142.66 84.37 139.93C81.44 137.34 77.95 136.84 75.66 139.44C73.51 141.88 74.43 144.56 76.17 148.38C78.05 152.43 78.81 154.4 77.23 156.19C75.63 157.95 73.52 157.81 71.51 156.03C68.97 153.75 68.94 150.81 71.05 148.04L68.78 146.04C66.12 149.82 67.02 153.97 70.52 157.06ZM89.87 148.61C92.69 149.73 94.5 150.42 95.86 151.41L96.04 151.54L86.56 164.59C85.4 166.2 84.68 166.89 83.43 166.81L83.36 166.9L87.85 170.16L87.91 170.07C87.45 168.9 87.91 168.02 89.08 166.41L98.56 153.37L98.76 153.51C100.12 154.5 101.32 156 103.25 158.33L104.77 156.25L91.38 146.53ZM96.44 176.01 108.69 183.24 110.05 180.92C107.44 180.29 105.35 179.64 103.68 178.66L100.91 177.03L105.49 169.26L106.94 170.11C108.31 170.92 110.28 172.15 112.13 173.54L113.14 171.82C111.08 170.8 109.01 169.74 107.63 168.93L106.19 168.08L110.27 161.16L112.61 162.53C114.05 163.39 115.49 164.69 117.72 166.88L119 164.71L107.2 157.75L107.16 157.83C107.74 158.98 107.42 159.8 106.36 161.61L99.4 173.41C98.39 175.12 97.77 175.89 96.49 175.92ZM113.23 185.69 117.11 187.46 117.15 187.36C116.37 186.23 116.67 185.25 117.53 183.37L123.19 170.99L125.97 191.51L128.54 192.69L135.73 176.95C136.6 175.06 137.14 174.21 138.33 173.98L138.37 173.88L134.53 172.12L134.48 172.22C135.21 173.32 134.94 174.31 134.08 176.19L128.37 188.67L125.51 167.99L122.13 166.45L122.09 166.52C122.61 167.53 122.38 168.38 121.51 170.29L115.87 182.61C115.01 184.5 114.46 185.36 113.28 185.59ZM144.68 198.82C150.31 200.62 155.13 198.33 157.7 193.13L155.96 192.57C153.91 196.53 150.22 198.41 145.87 197.02C140.78 195.4 139.45 190.62 141 185.77C142.54 180.94 146.57 177.99 151.13 179.45C154.68 180.58 156.37 183.65 156.05 187.52L158.98 188.45C159.4 183.21 156.33 179.55 151.58 178.04C145.39 176.06 139.74 178.87 137.73 185.14C135.88 190.95 138.23 196.76 144.68 198.82ZM159.97 202.75 173.91 205.57 174.45 202.94C171.76 203.19 169.58 203.27 167.69 202.88L164.53 202.24L166.32 193.41L167.96 193.74C169.53 194.06 171.8 194.57 174 195.27L174.39 193.33C172.11 193.04 169.8 192.71 168.24 192.39L166.59 192.06L168.18 184.19L170.85 184.72C172.49 185.06 174.28 185.82 177.1 187.16L177.6 184.69L164.18 181.97L164.16 182.06C165.09 182.96 165.06 183.84 164.64 185.9L161.92 199.32C161.53 201.26 161.2 202.2 159.99 202.64ZM200.09 208.51C206.78 208.76 211.56 204.51 211.81 197.96C212.05 191.39 207.6 186.79 200.91 186.54C194.17 186.29 189.39 190.54 189.14 197.09C188.9 203.64 193.35 208.26 200.09 208.51ZM192.44 197.24C192.65 191.64 195.88 187.84 200.86 188.03C205.81 188.21 208.74 192.24 208.53 197.81C208.32 203.41 205.1 207.24 200.15 207.05C195.17 206.87 192.24 202.81 192.44 197.24ZM216.74 208.09 222.35 207.69 222.35 207.57C221.18 206.98 220.97 206.02 220.83 204.03L220.31 196.94L221.54 196.85C223.1 196.74 226.04 196.66 228.37 196.66L228.23 194.68C225.92 195.02 223 195.37 221.44 195.48L220.21 195.57L219.66 188.01L222.11 187.83C224.35 187.66 226.47 187.9 229.35 188.45L229.16 185.94L215.2 186.95L215.21 187.04C216.35 187.66 216.55 188.51 216.7 190.61L217.7 204.26C217.84 206.25 217.77 207.23 216.73 207.98ZM245.12 204.91 259.02 201.91 258.45 199.29C256.1 200.6 254.13 201.54 252.24 201.95L249.09 202.62L247.19 193.81L248.83 193.46C250.39 193.12 252.67 192.68 254.97 192.45L254.55 190.5C252.34 191.15 250.1 191.78 248.54 192.12L246.9 192.47L245.2 184.61L247.86 184.04C249.5 183.69 251.45 183.67 254.56 183.77L254.03 181.31L240.65 184.19L240.66 184.28C241.88 184.73 242.2 185.55 242.64 187.6L245.53 200.99C245.95 202.93 246.02 203.92 245.09 204.8ZM258.27 183.19 270.14 198.61 272.83 197.74C272.67 197.24 272.63 196.84 272.63 196.22L273.21 178.36C273.28 176.72 273.4 175.91 274.04 175.18L274.02 175.1L269.97 176.4L269.99 176.48C271.1 176.62 271.39 177.26 271.37 178.92L271.09 195.18L261.48 182.1C260.59 180.89 260.26 180.14 261.17 179.32L261.14 179.24L255.65 181L255.68 181.08C256.67 181.32 257.3 181.91 258.27 183.19ZM284.41 193.55 289.59 191.41 289.55 191.31C288.28 191.11 287.78 190.25 287.02 188.42L281.8 175.76C280.99 173.82 280.79 172.96 281.53 171.9L281.5 171.82L276.33 173.96L276.36 174.04C277.63 174.27 278.1 175.01 278.9 176.96L284.12 189.61C284.88 191.45 285.12 192.41 284.37 193.45ZM295.15 189.01 307.79 182.69 306.57 180.24C304.54 182.13 302.81 183.56 300.98 184.47L298.4 185.76L291.26 171.46C290.32 169.58 290.05 168.74 290.69 167.64L290.65 167.56L285.67 170.05L285.71 170.13C287 170.27 287.51 170.98 288.45 172.86L294.57 185.11C295.46 186.89 295.77 187.82 295.1 188.91ZM318.12 176.64 318.17 176.71 322.01 174.04 321.96 173.97C320.84 174.03 320.32 173.37 319.83 171.7L318.88 168.27L325.65 163.55L328.57 165.68C329.87 166.61 330.31 167.4 329.77 168.53L329.82 168.59L334.83 165.11L334.76 165.01C333.65 165.07 332.67 164.66 331.33 163.72L315.45 152.77L312.83 154.6C313.34 154.93 313.63 155.4 313.86 156.17L318.24 172.7C318.74 174.44 318.57 175.57 318.12 176.64ZM318.47 166.85 315.47 156.17 324.44 162.68ZM338.32 162.28 341.52 159.46 341.44 159.38C340.1 159.63 339.33 158.97 337.96 157.41L328.97 147.2L348.83 153.02L350.95 151.15L339.52 138.17C338.15 136.61 337.59 135.76 337.86 134.59L337.79 134.51L334.61 137.3L334.69 137.38C335.99 137.17 336.78 137.82 338.15 139.37L347.22 149.67L327.17 143.85L324.38 146.31L324.43 146.38C325.57 146.31 326.25 146.87 327.64 148.44L336.59 158.61C337.96 160.17 338.52 161.02 338.25 162.19ZM356.12 146.2 361.51 140.16C366.56 134.5 366.51 128.08 361.6 123.7C356.65 119.28 350.88 120.24 345.67 126.07L340.31 132.09L340.37 132.14C341.62 131.79 342.36 132.27 343.92 133.67L354.14 142.78C355.62 144.11 356.26 144.86 356.04 146.12ZM357.98 142.01 344.26 129.76 346.61 127.13C350.6 122.66 355.03 122.23 359.44 126.16C363.89 130.13 364.14 135.11 360.33 139.38ZM384.93 109.66C388.04 104.64 386.99 99.42 382.57 95.66L381.61 97.21C384.95 100.16 385.88 104.19 383.48 108.07C380.67 112.62 375.71 112.75 371.38 110.07C367.07 107.41 365.19 102.79 367.7 98.71C369.66 95.55 373.05 94.65 376.72 95.9L378.34 93.28C373.35 91.61 369.06 93.7 366.44 97.93C363.03 103.46 364.38 109.63 369.98 113.09C375.17 116.3 381.37 115.43 384.93 109.66ZM392.55 95.83 394.89 90.74 394.79 90.7C393.72 91.41 392.77 91.13 390.97 90.3L385.01 87.56L389.27 78.3L395.22 81.04C397.03 81.87 397.86 82.4 398.02 83.68L398.12 83.72L400.46 78.64L400.36 78.59C399.29 79.3 398.34 79.02 396.54 78.19L384.1 72.47C382.19 71.59 381.46 71.1 381.28 69.81L381.2 69.78L378.86 74.87L378.94 74.9C380.03 74.2 380.88 74.44 382.79 75.32L387.97 77.7L383.72 86.96L378.53 84.57C376.62 83.7 375.89 83.21 375.71 81.92L375.63 81.89L373.29 86.98L373.37 87.01C374.46 86.31 375.31 86.55 377.22 87.42L389.66 93.14C391.46 93.98 392.29 94.51 392.45 95.79ZM402.03 74.43 402.11 74.45 403.57 70.01 403.49 69.98C402.64 70.7 401.82 70.5 400.43 69.45L397.6 67.28L400.18 59.43L403.79 59.38C405.4 59.35 406.22 59.71 406.47 60.94L406.55 60.97L408.45 55.17L408.35 55.13C407.49 55.85 406.46 56.11 404.83 56.16L385.55 56.95L384.56 59.99C385.16 59.95 385.68 60.15 386.32 60.63L399.76 71.2C401.2 72.3 401.75 73.3 402.03 74.43ZM396.42 66.39 387.61 59.66 398.69 59.48ZM411.92 41.25C413.23 34.69 409.8 29.29 403.37 28.01C396.92 26.71 391.68 30.38 390.36 36.94C389.04 43.56 392.47 48.95 398.9 50.24C405.32 51.53 410.59 47.87 411.92 41.25ZM399.57 47.01C394.08 45.91 390.84 42.12 391.82 37.23C392.79 32.37 397.24 30.12 402.7 31.21C408.19 32.31 411.46 36.11 410.49 40.97C409.51 45.85 405.04 48.1 399.57 47.01ZM415.29 17.15C415.64 12.93 413.77 9.77 410.03 9.46C406.46 9.16 404.89 11.78 402.67 15.79C400.89 19.04 399.8 20.89 397.57 20.7C395.59 20.53 394.5 19.1 394.72 16.47C394.96 13.6 397.01 11.94 399.83 11.81L400.08 8.83C396.06 9.17 393.62 12.17 393.28 16.27C392.95 20.17 394.63 23.26 398.09 23.55C401.33 23.82 402.93 21.48 404.95 17.8C407.08 13.88 408.21 12.09 410.58 12.29C412.95 12.51 414.09 14.29 413.87 16.97C413.56 20.37 411.22 22.14 407.74 22.11L407.49 25.12C412.11 25 414.9 21.81 415.29 17.15ZM415.47 4.78 415.51 1.95 412.21 1.9 412.17 4.73Z" fill="#7A7A7A"/><path d="M76.62 8.07C76.84 11.86 79.32 14.23 83.04 14.57L82.97 13.41C80.12 13.08 78.14 11.3 77.98 8.37C77.78 4.94 80.34 3.04 83.61 2.86C86.86 2.67 89.56 4.41 89.73 7.48C89.87 9.87 88.42 11.6 86.02 12.29L86.14 14.27C89.38 13.31 90.87 10.63 90.69 7.43C90.45 3.26 87.46 0.51 83.24 0.75C79.32 0.97 76.38 3.72 76.62 8.07ZM78.49 23.91C79.07 27.12 81.06 28.55 85.26 27.79L90.7 26.8C92.03 26.56 92.6 26.57 93.16 27.16L93.21 27.15L92.72 24.44L92.67 24.45C92.35 25.22 91.82 25.41 90.49 25.65L85 26.65C81.6 27.27 80.02 26.33 79.6 23.99C79.17 21.63 80.38 20.33 83.74 19.72L89.23 18.73C90.56 18.49 91.13 18.48 91.69 19.07L91.75 19.06L91.11 15.55L91.06 15.56C90.74 16.32 90.21 16.52 88.88 16.76L83.44 17.75C79 18.55 77.93 20.85 78.49 23.91ZM92.02 29.09C93.02 30.76 93.67 31.83 93.97 32.87L94.01 33L84.06 35.92C82.83 36.28 82.2 36.35 81.59 35.82L81.52 35.84L82.53 39.26L82.6 39.24C82.82 38.46 83.4 38.2 84.62 37.84L94.57 34.92L94.62 35.08C94.92 36.11 94.95 37.34 95.01 39.29L96.6 38.83L93.61 28.62ZM89.54 57.75C91.41 61.62 95.27 63.05 99.06 61.21C102.87 59.37 104.13 55.46 102.25 51.58C100.36 47.68 96.51 46.25 92.72 48.08C88.93 49.92 87.65 53.84 89.54 57.75ZM93.63 50C96.87 48.43 100 49.12 101.4 52C102.79 54.87 101.38 57.75 98.16 59.31C94.92 60.88 91.77 60.2 90.38 57.34C88.98 54.45 90.4 51.57 93.63 50ZM94.76 67.14 96.26 69.43 96.32 69.39C96.28 68.51 96.77 68.08 97.89 67.35L105.22 62.58L99.68 74.68L100.67 76.2L109.99 70.13C111.1 69.4 111.7 69.12 112.42 69.4L112.48 69.37L110.99 67.09L110.93 67.13C110.95 67.98 110.47 68.42 109.35 69.15L101.96 73.96L107.52 61.75L106.21 59.74L106.16 59.77C106.1 60.5 105.68 60.88 104.55 61.62L97.25 66.37C96.14 67.1 95.54 67.38 94.82 67.1ZM103.41 79.89 109.19 86.98 110.53 85.89C109.09 84.92 107.98 84.06 107.19 83.1L105.88 81.5L110.38 77.84L111.06 78.67C111.71 79.47 112.62 80.65 113.43 81.9L114.42 81.09C113.4 80.01 112.39 78.91 111.74 78.12L111.06 77.28L115.07 74.02L116.17 75.37C116.85 76.21 117.43 77.31 118.28 79.13L119.54 78.1L113.97 71.28L113.93 71.32C114.03 72.14 113.65 72.57 112.61 73.42L105.78 78.98C104.79 79.79 104.25 80.11 103.47 79.84ZM115.99 94.24 119.88 97.69C123.53 100.93 127.66 100.89 130.46 97.72C133.29 94.53 132.66 90.82 128.9 87.49L125.02 84.05L124.99 84.09C125.22 84.89 124.91 85.37 124.02 86.38L118.18 92.96C117.33 93.92 116.85 94.33 116.03 94.19ZM118.68 95.43 126.53 86.58 128.23 88.09C131.11 90.64 131.4 93.49 128.88 96.34C126.33 99.21 123.13 99.37 120.38 96.94ZM134.27 109.31C137.83 111.73 141.88 111.04 144.25 107.55C146.62 104.05 145.76 100.03 142.2 97.62C138.61 95.18 134.55 95.87 132.19 99.35C129.83 102.84 130.68 106.88 134.27 109.31ZM133.94 100.56C135.96 97.58 139.01 96.61 141.66 98.41C144.3 100.19 144.52 103.39 142.51 106.36C140.49 109.33 137.43 110.32 134.79 108.54C132.14 106.74 131.93 103.53 133.94 100.56ZM148.27 104.14 146.47 116.36 147.67 116.95C147.77 116.74 148 116.43 148.26 116.14L154.68 109.13L152.99 119.54L154.23 120.15C154.37 119.92 154.58 119.6 154.85 119.31L162.58 111.09C163.27 110.34 163.8 110 164.34 109.98L164.37 109.94L161.94 108.75L161.92 108.8C162.38 109.33 162.15 109.8 161.47 110.54L155.12 117.44L156.87 106.96L155.8 106.44L148.73 114.24L150.23 105.06C150.37 104.1 150.59 103.61 151.29 103.61L151.31 103.56L148.06 101.98L148.04 102.03C148.37 102.55 148.4 103.14 148.27 104.14ZM161.13 123.05 163.73 123.91 163.75 123.84C163.17 123.18 163.29 122.53 163.71 121.27L166.47 112.96L169.67 125.88L171.4 126.45L174.9 115.9C175.32 114.63 175.61 114.05 176.35 113.82L176.37 113.75L173.79 112.89L173.77 112.96C174.31 113.61 174.21 114.26 173.79 115.53L171.01 123.9L167.75 110.89L165.47 110.13L165.46 110.18C165.86 110.79 165.77 111.35 165.35 112.63L162.6 120.9C162.18 122.16 161.89 122.75 161.15 122.98ZM174.62 129.06 174.37 130.04C175.96 130.06 176.99 129.22 177.38 127.63L177.82 125.85L176.06 125.41L175.55 127.45L176.74 127.75C176.38 128.75 175.65 129.13 174.62 129.06ZM187.36 117.88C189.3 117.64 190.54 117.47 191.61 117.6L191.75 117.62L190.44 127.91C190.28 129.17 190.09 129.79 189.36 130.13L189.35 130.2L192.89 130.65L192.89 130.58C192.27 130.06 192.26 129.43 192.42 128.16L193.73 117.87L193.89 117.89C194.97 118.03 196.1 118.5 197.92 119.22L198.13 117.58L187.57 116.24ZM199.73 119.68 203.44 131.47 204.77 131.47C204.77 131.24 204.84 130.86 204.95 130.48L207.68 121.38L210.69 131.49L212.08 131.49C212.1 131.22 212.15 130.85 212.26 130.47L215.64 119.7C215.93 118.73 216.26 118.19 216.75 117.94L216.75 117.88L214.05 117.87L214.05 117.93C214.69 118.2 214.69 118.72 214.4 119.69L211.69 128.67L208.7 118.47L207.51 118.47L204.55 128.57L201.89 119.65C201.61 118.74 201.59 118.2 202.22 117.89L202.22 117.84L198.6 117.83L198.6 117.88C199.12 118.21 199.41 118.73 199.73 119.68ZM225.9 130.5C230.16 129.91 232.71 126.68 232.13 122.51C231.54 118.32 228.21 115.91 223.95 116.51C219.65 117.11 217.1 120.34 217.69 124.51C218.27 128.68 221.61 131.1 225.9 130.5ZM219.79 124.23C219.29 120.67 220.91 117.9 224.08 117.45C227.24 117.01 229.55 119.24 230.04 122.78C230.54 126.35 228.93 129.14 225.77 129.58C222.6 130.02 220.29 127.78 219.79 124.23ZM238.26 115.61C239.92 114.6 240.98 113.94 242.01 113.62L242.15 113.58L245.18 123.5C245.55 124.72 245.63 125.35 245.1 125.97L245.12 126.03L248.53 124.99L248.51 124.93C247.73 124.71 247.46 124.14 247.09 122.91L244.06 113L244.22 112.95C245.25 112.63 246.48 112.6 248.43 112.51L247.95 110.93L237.77 114.03ZM252.22 123.81 252.24 123.86 255.02 122.7 255 122.65C254.29 122.54 254.04 122.05 253.97 120.94L253.83 118.65L258.73 116.6L260.27 118.34C260.97 119.1 261.14 119.66 260.64 120.29L260.66 120.34L264.28 118.83L264.26 118.76C263.55 118.65 262.99 118.26 262.28 117.48L253.78 108.45L251.89 109.24C252.16 109.52 252.28 109.86 252.32 110.37L252.83 121.35C252.91 122.51 252.65 123.2 252.22 123.81ZM253.77 117.7 253.33 110.59 258.08 115.9ZM266.85 117.5 270 115.75 269.96 115.69C269.14 115.65 268.76 115.14 268.14 114.03L266.55 111.18L266.97 109.69L274.81 113.08L276.78 111.98L276.72 111.87L267.4 108.1L269.04 102.22C269.26 101.44 269.54 100.91 270.12 100.28L270.04 100.14L268.06 101.24C268 101.81 267.91 102.54 267.7 103.38L265.94 110.08L263.86 106.33C263.21 105.15 263.02 104.62 263.41 103.88L263.38 103.84L260.24 105.58L260.26 105.63C261.1 105.68 261.45 106.13 262.1 107.31L266.37 115C266.99 116.12 267.22 116.72 266.82 117.43ZM279.12 110.41 286.62 105.19 285.63 103.77C284.56 105.13 283.63 106.18 282.61 106.88L280.91 108.07L277.6 103.31L278.48 102.69C279.32 102.11 280.57 101.28 281.87 100.57L281.14 99.52C279.99 100.46 278.82 101.38 277.98 101.97L277.09 102.59L274.14 98.35L275.57 97.35C276.46 96.73 277.61 96.24 279.48 95.53L278.55 94.2L271.33 99.23L271.36 99.27C272.2 99.24 272.59 99.65 273.36 100.76L278.39 107.98C279.12 109.03 279.41 109.6 279.08 110.35ZM294.28 98.85 296.95 96.43 296.9 96.38C296.09 96.53 295.6 96.12 294.75 95.18L288.84 88.65C287.94 87.65 287.63 87.17 287.85 86.37L287.81 86.33L285.14 88.74L285.18 88.78C286 88.64 286.44 89 287.35 90L293.25 96.53C294.11 97.48 294.46 98 294.23 98.8ZM290.61 86.09C291.56 84.38 292.16 83.28 292.9 82.5L293 82.39L300.52 89.53C301.45 90.41 301.83 90.92 301.67 91.71L301.72 91.76L304.18 89.18L304.13 89.13C303.34 89.33 302.82 88.96 301.89 88.08L294.37 80.94L294.48 80.83C295.23 80.04 296.28 79.4 297.93 78.37L296.73 77.23L289.41 84.95ZM311.54 80.89C313.21 78.75 313.31 76.39 311.41 74.91C309.59 73.49 307.83 74.35 305.23 75.73C303.12 76.85 301.89 77.46 300.75 76.58C299.75 75.79 299.67 74.63 300.71 73.3C301.85 71.84 303.53 71.67 305.09 72.59L306.28 71.07C304 69.84 301.63 70.59 300 72.68C298.45 74.67 298.27 76.92 300.03 78.29C301.68 79.58 303.36 78.88 305.74 77.61C308.27 76.25 309.51 75.68 310.71 76.62C311.91 77.58 311.9 78.94 310.84 80.3C309.47 82.02 307.59 82.15 305.73 80.91L304.53 82.44C307.06 84 309.69 83.26 311.54 80.89ZM319.7 68.69 321.48 65.53 321.41 65.5C320.68 65.91 320.09 65.68 318.98 65.06L315.51 63.11L316.24 61.8C317.91 58.84 318.1 56.24 315.83 54.97C313.62 53.72 311.74 55.04 310.12 57.93L307.82 62.01L307.87 62.04C308.61 61.64 309.14 61.84 310.32 62.5L317.99 66.81C319.1 67.44 319.61 67.83 319.64 68.65ZM314.74 62.67 309.97 59.99 310.82 58.49C311.86 56.64 313.15 55.8 314.83 56.74C316.59 57.73 316.55 59.46 315.42 61.47ZM325.99 57.06 329.65 48.74 328.04 48.03C327.81 49.8 327.54 51.22 327.01 52.42L326.27 54.12L316.86 49.98C315.62 49.43 315.15 49.13 315.01 48.32L314.96 48.3L313.52 51.58L313.57 51.6C314.26 51.14 314.81 51.28 316.05 51.82L324.1 55.37C325.27 55.88 325.81 56.22 325.93 57.03ZM330.46 46.66 330.51 46.67 331.44 43.81 331.39 43.8C330.84 44.26 330.31 44.13 329.41 43.46L327.59 42.08L329.23 37.02L331.55 36.98C332.58 36.96 333.11 37.18 333.27 37.97L333.32 37.99L334.53 34.26L334.46 34.24C333.92 34.7 333.26 34.87 332.2 34.9L319.82 35.47L319.18 37.42C319.57 37.4 319.91 37.53 320.32 37.83L328.99 44.59C329.92 45.29 330.28 45.94 330.46 46.66ZM326.83 41.51 321.15 37.21 328.27 37.06ZM336.59 25.66C337.33 21.94 335.52 19.03 332.01 17.77L331.78 18.91C334.46 19.94 335.93 22.16 335.36 25.03C334.69 28.41 331.74 29.6 328.53 28.97C325.33 28.34 323.16 25.98 323.75 22.96C324.22 20.61 326.05 19.31 328.54 19.23L328.93 17.29C325.55 17.41 323.44 19.63 322.82 22.78C322.01 26.88 324.22 30.28 328.37 31.1C332.21 31.86 335.75 29.94 336.59 25.66ZM337.98 15.61 338.74 6.5 337.02 6.35C337.38 8.05 337.59 9.44 337.49 10.67L337.32 12.74L331.54 12.25L331.63 11.18C331.72 10.16 331.88 8.67 332.16 7.21L330.89 7.11C330.87 8.59 330.84 10.08 330.75 11.1L330.66 12.18L325.51 11.75L325.66 10.01C325.75 8.93 326.1 7.73 326.75 5.84L325.13 5.7L324.4 14.47L324.45 14.48C324.96 13.82 325.52 13.77 326.87 13.89L335.64 14.62C336.91 14.73 337.54 14.87 337.91 15.6ZM338.77 3.22 338.79 1.4 336.67 1.37 336.64 3.19Z" fill="#7A7A7A"/></svg>
+      <button class="head" type="button" aria-label="Behead"><span class="base"></span><span class="face"></span><span class="label">Behead</span><span class="grain"></span></button>
+    </div>
+  </main>
+
+  <div class="swarm" id="swarm"></div>
+
+  <footer class="footer">
+    <div class="row">
+      <span>Personal Practice <span class="sr-only">(S)</span><svg class="mark" viewBox="0 -800 837 1000" aria-hidden="true"><path transform="scale(1,-1)" fill="currentColor" d="M419 -15C639 -15 784 135 784 378C784 621 639 772 419 772C198 772 53 621 53 378C53 135 198 -15 419 -15ZM90 378C90 601 221 740 419 740C616 740 747 601 747 378C747 155 616 17 419 17C221 17 90 155 90 378ZM432.3 157C517.6 157 578.1 199.9 578.1 275.6C578.1 347.9 522.7 375 438.6 412.9C370.2 443.4 331.2 462 331.2 507.2C331.2 547.3 358.3 571.6 411.4 571.6C469.6 571.6 506.3 533.2 513.7 476.7H574.1C560.6 556.9 496.2 601 413.1 601C334 601 274.7 562 274.7 492C274.7 426.5 324.4 398.2 401.8 363.7C484.3 327.6 522.2 307.8 522.2 259.8C521.6 211.8 487.7 185.8 433.5 185.8C364.6 186.4 325 230.4 319.9 300.5H258.9C269.1 207.8 338 157 432.3 157Z"/></svg></span>
+      <span>Machine Cult × MI</span>
+      <span>© 2026 All rights reserved</span>
+    </div>
+    <div class="groove"></div>
+  </footer>
+
+  <svg class="hydra" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="1802.7" height="384.4" viewBox="0 0 1802.7 384.4" fill="none"><defs><filter id="hydraDeboss" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feOffset in="SourceAlpha" dy="2"/><feGaussianBlur stdDeviation="1" result="lip"/><feComposite in="lip" in2="SourceAlpha" operator="out" result="lipEdge"/><feFlood flood-color="#FFFFFF" flood-opacity="0.06"/><feComposite in2="lipEdge" operator="in" result="lipLight"/><feOffset in="SourceAlpha" dy="14"/><feGaussianBlur stdDeviation="9" result="sh"/><feComposite in="SourceAlpha" in2="sh" operator="out" result="shEdge"/><feFlood flood-color="#000000" flood-opacity="1"/><feComposite in2="shEdge" operator="in" result="dark"/><feOffset in="SourceAlpha" dy="-3"/><feGaussianBlur stdDeviation="2" result="hl"/><feComposite in="SourceAlpha" in2="hl" operator="out" result="hlEdge"/><feFlood flood-color="#FFFFFF" flood-opacity="0.05"/><feComposite in2="hlEdge" operator="in" result="light"/><feMerge><feMergeNode in="lipLight"/><feMergeNode in="SourceGraphic"/><feMergeNode in="dark"/><feMergeNode in="light"/></feMerge></filter></defs><g filter="url(#hydraDeboss)"><path d="M20 364.4H111V362.6C93.3 351.7 91 335.8 91 303.5V197H256.6V303.5C256.6 335.8 254.3 351.7 236.6 362.6V364.4H327.6V362.6C309.8 351.7 307.6 335.8 307.6 303.5V81C307.6 46.8 309.8 32.7 327.6 21.4V20H236.6V21.4C254.3 32.7 256.6 46.8 256.6 81V173.8H91V81C91 46.8 93.3 32.7 111 21.4V20H20V21.4C37.7 32.7 40 46.8 40 81V303.5C40 335.8 37.7 351.7 20 362.6Z" fill="#141414"/><path d="M422.7 57.8 509.1 208.8V303.5C509.1 335.8 506.9 351.7 489.1 362.6V364.4H579.7V362.6C561.9 351.7 559.6 335.8 559.6 303.5V208.4L641.1 58.7C651.5 38.2 660.6 29.1 673.8 21.4V20H606V21.4C620.6 29.1 618.3 41.4 609.7 58.2L546 178.8L480.5 58.7C471.4 41.8 470.5 29.1 483.6 21.4V20H389.5V21.4C404.5 29.6 411.8 38.7 422.7 57.8Z" fill="#141414"/><path d="M735.3 364.4H866.8C990.1 364.4 1067.4 294.4 1067.4 187.4C1067.4 79.6 993.2 20 866.3 20H735.3V21.4C753 32.7 755.3 46.8 755.3 81V303.5C755.3 335.8 753 351.7 735.3 362.6ZM806.2 341.7V42.7H863.6C960.9 42.7 1014.2 91.9 1014.2 187.9C1014.2 284.8 956.4 341.7 863.6 341.7Z" fill="#141414"/><path d="M1140.2 364.4H1231.7V362.6C1213.5 351.7 1211.2 335.8 1211.2 303.5V197.4H1247.6L1359.5 364.4H1418.7V361.2L1294.9 193.4C1352.2 186.5 1393.2 158.3 1393.2 104.6C1393.2 44.1 1341.3 20 1263.5 20H1140.2V21.4C1158 32.7 1160.2 46.8 1160.2 81V303.5C1160.2 335.8 1158 351.7 1140.2 362.6ZM1211.2 175.2V42.3H1254.9C1308.1 42.3 1342.7 59.1 1342.7 105.5C1342.7 155.6 1304.9 175.2 1248 175.2Z" fill="#141414"/><path d="M1452.8 363.1V364.4H1528.8V363.1C1513.3 353.5 1512.4 339.9 1521.5 313L1540.6 258.4H1674.8L1693.9 313.9C1702.6 338.5 1701.2 353.1 1683.5 363.1V364.4H1782.7V362.6C1767.2 353.1 1758.1 338.5 1749 313.5L1638.9 20H1587C1590.7 29.1 1590.2 38.2 1586.1 50.5L1491 311.7C1481.5 339.4 1468.7 353.1 1452.8 363.1ZM1548.3 235.7 1607.5 65.5 1666.6 235.7Z" fill="#141414"/></g></svg>
+
+  <p class="sr-only" aria-live="polite" id="status"></p>
+
+<script>
+(() => {
+  const swarm = document.getElementById('swarm');
+  const hero = document.getElementById('hero');
+  const status = document.getElementById('status');
+  const footer = document.querySelector('.footer');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const W = 148, H = 52, GAP = 14, EDGE = 16;
+
+  // Scale the hero to the room above the footer, keeping the artboard's proportions:
+  // the composition fills ~66% of that height, centred, with equal air above and below.
+  const stage = hero.parentElement;
+  let headScale = 1;
+  function fitHero() {
+    const body = document.body.getBoundingClientRect();
+    const footTop = footer.getBoundingClientRect().top;
+    stage.style.bottom = Math.max(0, body.bottom - footTop) + 'px';
+    const room = footTop - body.top;
+    const s = Math.max(0.45, Math.min(room * 0.66 / 541.52, (window.innerWidth - 40) / 415.51, 1.35));
+    // lift the composition ~150px (at the 1728×1117 artboard), scaled to the room available,
+    // but never closer than 74px to the top edge
+    const centredTop = (room - 541.52 * s) / 2;
+    const lift = Math.max(0, Math.min(150 * room / 843, centredTop - 74));
+    hero.style.transform = `translateY(${-lift}px) scale(${s})`;
+    headScale = s;
+    document.documentElement.style.setProperty('--head-scale', s.toFixed(4));
+  }
+  window.addEventListener('resize', fitHero);
+  if (document.fonts) document.fonts.ready.then(fitHero);
+  fitHero();
+
+  function makeHead() {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'head';
+    b.setAttribute('aria-label', 'Behead');
+    b.innerHTML = '<span class="base"></span><span class="face"></span><span class="label">Behead</span><span class="grain"></span>';
+    return b;
+  }
+
+  function occupied() {
+    const rects = [...document.querySelectorAll('.head')].map(el => el.getBoundingClientRect());
+    const sigil = hero.querySelector('.sigil').getBoundingClientRect();
+    const arc = hero.querySelector('.arc').getBoundingClientRect();
+    return rects.concat([sigil, arc]);
+  }
+
+  function overlaps(x, y, rects) {
+    const w = W * headScale, h = H * headScale;
+    return rects.some(r => x < r.right + GAP && x + w > r.left - GAP && y < r.bottom + GAP && y + h > r.top - GAP);
+  }
+
+  function findSpot(rects) {
+    const maxX = window.innerWidth - W * headScale - EDGE;
+    const maxY = footer.getBoundingClientRect().top - H * headScale - 20;
+    let x, y;
+    for (let i = 0; i < 400; i++) {
+      x = EDGE + Math.random() * Math.max(0, maxX - EDGE);
+      y = EDGE + Math.random() * Math.max(0, maxY - EDGE);
+      if (!overlaps(x, y, rects)) return { x, y };
+    }
+    return { x, y }; // the swarm has filled the page; let them pile up
+  }
+
+  function shake() {
+    const k = [
+      { transform: 'translate(0,0)' }, { transform: 'translate(-3px,2px)' },
+      { transform: 'translate(2px,-2px)' }, { transform: 'translate(-1px,1px)' },
+      { transform: 'translate(0,0)' }
+    ];
+    [hero.parentElement, swarm].forEach(el => el.animate(k, { duration: 200, easing: 'linear' }));
+  }
+
+  function sever(btn) {
+    const r = btn.getBoundingClientRect();
+    const from = { x: r.left, y: r.top };
+    if (reduce.matches) { btn.remove(); return from; }
+
+    const scale = r.width / W;
+    const debris = document.createElement('div');
+    debris.className = 'debris';
+    Object.assign(debris.style, { left: r.left + 'px', top: r.top + 'px', transform: `scale(${scale})` });
+    document.body.appendChild(debris);
+
+    // 1. the hammer lands: the head squashes into the ground
+    const stand = btn.cloneNode(true);
+    stand.className = 'head piece';
+    stand.removeAttribute('aria-label');
+    stand.setAttribute('aria-hidden', 'true');
+    stand.tabIndex = -1;
+    debris.appendChild(stand);
+    btn.remove();
+    stand.animate(
+      [{ transform: 'none' }, { transform: 'translateY(4px) scale(1.05, 0.8)' }],
+      { duration: 70, easing: 'cubic-bezier(.6,0,1,1)', fill: 'forwards' }
+    ).onfinish = () => {
+      shake();
+
+      // 2. the head gives way and is gone
+      stand.animate(
+        [{ transform: 'translateY(4px) scale(1.05, 0.8)', opacity: 1 },
+         { transform: 'translateY(6px) scale(1.08, 0.7)', opacity: 0 }],
+        { duration: 160, easing: 'ease-out', fill: 'forwards' }
+      ).onfinish = () => stand.remove();
+
+      // 3. only dust is left behind
+      for (let i = 0; i < 46; i++) {
+        const d = document.createElement('div');
+        d.className = 'dust';
+        const size = 0.8 + Math.random() * 1.8;
+        const x = 6 + Math.random() * (W - 12), y = 8 + Math.random() * (H - 16);
+        const tone = 0x55 + Math.floor(Math.random() * 0x60);
+        Object.assign(d.style, {
+          left: x + 'px', top: y + 'px', width: size + 'px', height: size + 'px',
+          background: `rgb(${tone},${tone},${tone})`
+        });
+        debris.appendChild(d);
+        const drift = (x - W / 2) * (0.15 + Math.random() * 0.35) + (Math.random() * 14 - 7);
+        const lift = -(4 + Math.random() * 14);
+        const settle = 10 + Math.random() * 26;
+        d.animate([
+          { transform: 'translate(0,0)', opacity: 0 },
+          { transform: `translate(${drift * 0.4}px,${lift}px)`, opacity: 0.85, offset: 0.18, easing: 'cubic-bezier(.3,0,.6,1)' },
+          { transform: `translate(${drift}px,${settle}px)`, opacity: 0 }
+        ], { duration: 1300 + Math.random() * 900, delay: Math.random() * 90, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+      }
+      setTimeout(() => debris.remove(), 2500);
+    };
+    return from;
+  }
+
+  // two new heads rise in place at random open spots
+  function grow(focusFirst) {
+    const born = [];
+    const sc = headScale;
+    for (let i = 0; i < 2; i++) {
+      const spot = findSpot(occupied().concat(born.map(b => b.rect)));
+      const head = makeHead();
+      head.style.left = (spot.x / window.innerWidth * 100) + 'vw';
+      head.style.top = (spot.y / window.innerHeight * 100) + 'vh';
+      swarm.appendChild(head);
+      born.push({ el: head, rect: { left: spot.x, top: spot.y, right: spot.x + W * sc, bottom: spot.y + H * sc } });
+      if (!reduce.matches) {
+        // scale about the head's own centre (transform-origin is its top-left corner)
+        const at = k => `translate(${W * sc * (1 - k) / 2}px, ${H * sc * (1 - k) / 2}px) scale(${sc * k})`;
+        head.animate([
+          { transform: at(0.2), opacity: 0, filter: 'blur(3px)' },
+          { transform: at(1.04), opacity: 1, filter: 'blur(0px)', offset: 0.65 },
+          { transform: at(1), opacity: 1, filter: 'blur(0px)' }
+        ], { duration: 520, delay: 260 + i * 130, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'backwards' });
+      }
+    }
+    if (focusFirst) born[0].el.focus({ preventScroll: true });
+    const count = document.querySelectorAll('.head:not(.piece)').length;
+    status.textContent = `Two heads grew back. ${count} heads remain.`;
+  }
+
+  // ---- the sigil as a carved slab: stacked copies of the artwork give it thickness ----
+  const sigil = hero.querySelector('.sigil-3d');
+  const front = sigil.querySelector('.face');
+  const DEPTH = 22, LAYERS = 28;                 // px of stone, number of slices (sub-pixel spacing = no banding)
+  for (let i = 1; i <= LAYERS; i++) {
+    const isBack = i === LAYERS;
+    const layer = isBack ? front.cloneNode() : document.createElement('div');
+    const t = i / LAYERS;                         // 0 = just behind the face, 1 = back
+    layer.className = 'sigil-layer ' + (isBack ? 'back' : 'side');
+    if (!isBack) {
+      layer.style.webkitMaskImage = layer.style.maskImage = `url("${front.src}")`;
+      layer.style.backgroundImage = `url("${front.src}")`;
+    }
+    layer.style.transform = `translateZ(${-t * DEPTH}px)`;
+    // edges darken toward the back, with a little slice-to-slice variation for chisel strata
+    layer.style.setProperty('--k', (0.95 - t * 0.4 + (Math.random() - 0.5) * 0.14).toFixed(3));
+    sigil.insertBefore(layer, sigil.firstChild);
+  }
+  front.style.transform = 'translateZ(0.5px)';
+
+  // rotate about the slab's centre and light it from the front-left as it turns
+  let angle = 0, target = 0, last = 0, raf = 0;
+  function render(a) {
+    const r = a * Math.PI / 180;
+    sigil.style.transform = `translateZ(${DEPTH / 2}px) rotateY(${a}deg) translateZ(${-DEPTH / 2}px)`;
+    // light comes from the viewer: whichever face turns toward you is fully lit,
+    // with only a slight falloff as it angles away
+    const facing = Math.cos(r);
+    sigil.style.setProperty('--face', (0.7 + 0.3 * Math.max(0, facing)).toFixed(3));
+    sigil.style.setProperty('--back', (0.7 + 0.3 * Math.max(0, -facing)).toFixed(3));
+    sigil.style.setProperty('--side', (0.24 + 0.22 * Math.abs(Math.sin(r))).toFixed(3));
+  }
+  function tick(now) {
+    const dt = Math.min(64, now - (last || now)); last = now;
+    angle += (target - angle) * (1 - Math.exp(-dt / 280));
+    if (Math.abs(target - angle) < 0.05) { angle = target = target % 360; render(angle); raf = 0; last = 0; return; }
+    render(angle);
+    raf = requestAnimationFrame(tick);
+  }
+  render(0);
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.head');
+    if (!btn || btn.classList.contains('piece')) return;
+    const keyboard = e.detail === 0;
+    sever(btn);
+    grow(keyboard);
+    // the sigil turns a full revolution with every head taken; rapid clicks stack up
+    if (!reduce.matches) {
+      target += 360;
+      if (!raf) raf = requestAnimationFrame(tick);
+    }
+  });
+})();
+</script>
+</body>
+</html>
