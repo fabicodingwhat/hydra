@@ -147,7 +147,7 @@ body {
 .head:focus-visible { outline: 1px solid #9A9A9A; outline-offset: 4px; }
 
 /* spawned heads */
-.swarm { position: absolute; inset: 0; pointer-events: none; }
+.swarm { position: absolute; inset: 0; pointer-events: none; z-index: 2; } /* heads sit over the hero and the footer text */
 .swarm .head { position: absolute; pointer-events: auto; transform: scale(var(--head-scale)); transform-origin: 0 0; }
 
 /* crumbled head */
@@ -282,11 +282,9 @@ body {
     return b;
   }
 
+  // heads keep clear of each other, but nothing else is sacred: they land on the sigil, the arc and the footer
   function occupied() {
-    const rects = [...document.querySelectorAll('.head')].map(el => el.getBoundingClientRect());
-    const sigil = hero.querySelector('.sigil').getBoundingClientRect();
-    const arc = hero.querySelector('.arc').getBoundingClientRect();
-    return rects.concat([sigil, arc]);
+    return [...document.querySelectorAll('.head')].map(el => el.getBoundingClientRect());
   }
 
   function overlaps(x, y, rects) {
@@ -296,7 +294,7 @@ body {
 
   function findSpot(rects) {
     const maxX = window.innerWidth - W * headScale - EDGE;
-    const maxY = footer.getBoundingClientRect().top - H * headScale - 20;
+    const maxY = footer.getBoundingClientRect().bottom - H * headScale;
     let x, y;
     for (let i = 0; i < 400; i++) {
       x = EDGE + Math.random() * Math.max(0, maxX - EDGE);
