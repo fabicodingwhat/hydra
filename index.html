@@ -421,9 +421,11 @@ body {
 
   // rotate about the slab's centre and light it from the front-left as it turns
   let angle = 0, target = 0, last = 0, raf = 0;
-  function render(a) {
+  let tiltX = 0, tiltY = 0, aimX = 0, aimY = 0;  // the lean toward a nearby cursor, in degrees
+  function render() {
+    const a = angle + tiltY;
     const r = a * Math.PI / 180;
-    sigil.style.transform = `translateZ(${DEPTH / 2}px) rotateY(${a}deg) translateZ(${-DEPTH / 2}px)`;
+    sigil.style.transform = `translateZ(${DEPTH / 2}px) rotateX(${tiltX}deg) rotateY(${a}deg) translateZ(${-DEPTH / 2}px)`;
     // light comes from the viewer: whichever face turns toward you is fully lit,
     // with only a slight falloff as it angles away
     const facing = Math.cos(r);
@@ -434,11 +436,38 @@ body {
   function tick(now) {
     const dt = Math.min(64, now - (last || now)); last = now;
     angle += (target - angle) * (1 - Math.exp(-dt / 280));
-    if (Math.abs(target - angle) < 0.05) { angle = target = target % 360; render(angle); raf = 0; last = 0; return; }
-    render(angle);
+    const lean = 1 - Math.exp(-dt / 160);
+    tiltX += (aimX - tiltX) * lean;
+    tiltY += (aimY - tiltY) * lean;
+    if (Math.abs(target - angle) < 0.05 && Math.abs(aimX - tiltX) < 0.05 && Math.abs(aimY - tiltY) < 0.05) {
+      angle = target = target % 360; tiltX = aimX; tiltY = aimY;
+      render(); raf = 0; last = 0; return;
+    }
+    render();
     raf = requestAnimationFrame(tick);
   }
-  render(0);
+  render();
+
+  // within 100px of the sigil, the slab turns slightly to face the cursor
+  const sigilBox = hero.querySelector('.sigil');
+  const NEAR = 100, LEAN = 12;                    // px of reach, max degrees of turn
+  function aim(x, y) {
+    aimX = aimY = 0;
+    if (x != null && !reduce.matches) {
+      const b = sigilBox.getBoundingClientRect();
+      const dx = Math.max(b.left - x, 0, x - b.right), dy = Math.max(b.top - y, 0, y - b.bottom);
+      if (Math.hypot(dx, dy) <= NEAR) {
+        const clamp = v => Math.max(-1, Math.min(1, v));
+        const nx = clamp((x - (b.left + b.right) / 2) / (b.width / 2 + NEAR));
+        const ny = clamp((y - (b.top + b.bottom) / 2) / (b.height / 2 + NEAR));
+        aimY = nx * LEAN;
+        aimX = -ny * LEAN;
+      }
+    }
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+  document.addEventListener('pointermove', e => aim(e.clientX, e.clientY));
+  document.addEventListener('pointerout', e => { if (!e.relatedTarget) aim(); });  // cursor left the window
 
   document.addEventListener('click', e => {
     const btn = e.target.closest('.head');
