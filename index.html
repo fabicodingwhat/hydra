@@ -118,8 +118,9 @@ body {
 .head .base, .head .face, .head .grain { position: absolute; pointer-events: none; }
 .head .base {
   left: 0; top: 4px; width: 148px; height: 49px; border-radius: 8px;
-  background: linear-gradient(0deg, #050202 -5.07%, #707070 5.81%);
-  background: linear-gradient(in oklab 0deg, oklab(4.6% 0.015 0.008) -5.07%, oklab(54.3% 0 0) 5.81%);
+  /* the same near-black as the shadowed undersides of the sigil's stone */
+  background: linear-gradient(0deg, #060702 -5.07%, #161714 5.81%);
+  background: linear-gradient(in oklab 0deg, #060702 -5.07%, #161714 5.81%);
 }
 .head .face {
   left: 0; top: 0; width: 148px; height: 49px; border-radius: 8px;
