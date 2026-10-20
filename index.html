@@ -217,9 +217,79 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
 }
+
+/* ---------- loading screen ---------- */
+.loader {
+  --lu: calc(100vw / 1728);
+  --bar: clamp(18px, calc(88 * var(--lu)), 88px);
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  transition: opacity 700ms cubic-bezier(.4,0,.2,1), visibility 0s linear 700ms;
+}
+.loader.done { opacity: 0; visibility: hidden; }
+.loader-track {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: calc(var(--bar) + env(safe-area-inset-top, 0px));
+  background: #211F1F;
+  overflow: hidden;
+}
+.loader-fill {
+  height: 100%;
+  width: 0%;
+  background: #141414;
+  /* debossed: carved into the strip, lit from above */
+  box-shadow:
+    inset 0 calc(var(--bar) * 0.16) calc(var(--bar) * 0.2) #000,
+    inset 0 -3px 4px rgba(255,255,255,0.05),
+    0 2px 2px rgba(255,255,255,0.06);
+}
+.loader-foot {
+  position: absolute;
+  left: max(20px, calc(74 * var(--lu)));
+  right: max(20px, calc(92 * var(--lu)));
+  bottom: calc(max(28px, calc(100 * var(--lu))) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+.loader-sigil {
+  width: max(64px, calc(147 * var(--lu)));
+  aspect-ratio: 147 / 169;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+.loader-pct {
+  color: var(--ink);
+  font-size: max(88px, calc(330 * var(--lu)));
+  line-height: 0.74;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+body.is-loading .stage,
+body.is-loading .footer,
+body.is-loading .hydra { opacity: 0; }
+.stage, .footer, .hydra { transition: opacity 900ms cubic-bezier(.4,0,.2,1); }
+.stage { transition-delay: 250ms; }
+@media (prefers-reduced-motion: reduce) {
+  .loader { transition-duration: 200ms; }
+  .stage, .footer, .hydra { transition: none; }
+}
 </style>
 </head>
-<body>
+<body class="is-loading">
+  <div class="loader" id="loader" role="progressbar" aria-label="Loading Hydra" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div class="loader-track"><div class="loader-fill" id="loaderFill"></div></div>
+    <div class="loader-foot">
+      <img class="loader-sigil" id="loaderSigil" alt="">
+      <div class="loader-pct" aria-hidden="true"><span id="loaderPct">0</span>%</div>
+    </div>
+  </div>
   <main class="stage">
     <div class="hero" id="hero">
       <div class="sigil" role="img" aria-label="Carved stone hydra sigil"><div class="sigil-3d"><img class="sigil-layer face" alt="" src="assets/sigil.webp"></div></div>
@@ -467,6 +537,53 @@ body {
   }
   document.addEventListener('pointermove', e => aim(e.clientX, e.clientY));
   document.addEventListener('pointerout', e => { if (!e.relatedTarget) aim(); });  // cursor left the window
+
+  // ---- loading screen ----
+  (() => {
+    const loader = document.getElementById('loader');
+    const fill = document.getElementById('loaderFill');
+    const pctEl = document.getElementById('loaderPct');
+    const loaderSigil = document.getElementById('loaderSigil');
+    loaderSigil.src = front.currentSrc || front.src;
+
+    const MIN = reduce.matches ? 600 : 2600;   // ms: long enough to read as a moment, not a delay
+    let ready = false;
+    Promise.all([
+      document.fonts ? document.fonts.ready : null,
+      front.decode ? front.decode().catch(() => {}) : null,
+      loaderSigil.decode ? loaderSigil.decode().catch(() => {}) : null
+    ]).then(() => { ready = true; });
+
+    const start = performance.now();
+    let shown = -1, finished = false;
+    function frame(now) {
+      const t = Math.min(1, (now - start) / MIN);
+      // steady climb with a slight stone-grinding rhythm; stalls at 99 until assets are in
+      let p = 100 * (t + 0.035 * Math.sin(t * Math.PI * 6)) ;
+      p = Math.max(0, Math.min(t < 1 || !ready ? 99 : 100, p));
+      if (t >= 1 && ready) p = 100;
+      const v = Math.floor(p);
+      if (v !== shown) {
+        shown = Math.max(shown, v);
+        pctEl.textContent = shown;
+        fill.style.width = shown + '%';
+        loader.setAttribute('aria-valuenow', shown);
+      }
+      if (shown >= 100) {
+        if (!finished) {
+          finished = true;
+          setTimeout(() => {
+            loader.classList.add('done');
+            document.body.classList.remove('is-loading');
+            loader.addEventListener('transitionend', () => loader.remove(), { once: true });
+          }, 380);
+        }
+        return;
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
 
   document.addEventListener('click', e => {
     const btn = e.target.closest('.head');
